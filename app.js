@@ -39,6 +39,8 @@ const userRoutes = require("./routes/userRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
+const locationRoutes = require("./routes/locationRoutes"); // ✅ Add this
+
 
 // Use Routes
 app.use("/api/auth", authRoutes);
@@ -46,6 +48,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/employees", employeeRoutes);
+app.use("/api/location", locationRoutes); // ✅ Use it here
 
 // Default Route
 app.get("/", (req, res) => {
