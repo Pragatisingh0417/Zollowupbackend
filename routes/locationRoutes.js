@@ -1,6 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const router = express.Router();
+const Location = require("../models/Location"); 
 
 router.get("/", async (req, res) => {
   const { lat, lng } = req.query;
