@@ -12,6 +12,11 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        // Ensure the email is available
+        if (!profile.emails || !profile.emails[0]) {
+          return done(new Error('Email is not available from Google profile'), null);
+        }
+
         let user = await Employee.findOne({ email: profile.emails[0].value });
 
         if (!user) {

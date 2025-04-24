@@ -1,20 +1,6 @@
 require("dotenv").config();
-const connectDB = require("./config/db"); // Import DB connection
+const connectDB = require("./config/db"); // DB connection
 const app = require("./app");
-const cors = require("cors");
-app.use(cors({ origin: "http://localhost:3000",
-   credentials: true }));
-
-app.use("/api/auth", require("./routes/authRoutes"));
-
-const session = require("express-session");
-app.use(
-  session({
-    secret: process.env.JWT_SECRET,
-    resave: false,
-    saveUninitialized: true,
-  })
-);
 
 // Function to start the server
 const startServer = async () => {
