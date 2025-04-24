@@ -84,9 +84,14 @@ router.get(
 );
 
 // ✅ NEW: GET /api/auth/me — return current authenticated user
+// ✅ GET /api/auth/me — return current authenticated user
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const employee = await Employee.findById(req.employee.userId).select("-password");
+    if (!req.user || !req.user.userId) {
+      return res.status(400).json({ message: "Authentication info missing" });
+    }
+
+    const employee = await Employee.findById(req.user.userId).select("-password");
     if (!employee) return res.status(404).json({ message: "User not found" });
 
     res.json(employee);
@@ -95,5 +100,7 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+ 
 
 module.exports = router;
