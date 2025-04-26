@@ -3,17 +3,23 @@ const dotenv = require("dotenv");
 const passport = require("passport");
 const session = require("express-session");
 const cors = require("cors");
+const { handleContactForm } = require('./controllers/contactController');
+
 
 dotenv.config();
 
 const app = express();
 
 // ✅ CORS Middleware
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: "http://localhost:3000", 
+  credentials: true
+ }));
 
 // Middleware
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
+app.post('/contact', handleContactForm); // Ensure this matches the frontend fetch request
+
 
 // ✅ Session and Passport Setup
 app.use(
@@ -38,6 +44,7 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const locationRoutes = require("./routes/locationRoutes");
+const contactRoutes  = require("./routes/contactRoutes")
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -45,6 +52,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/location", locationRoutes);
+app.use("api/contact", contactRoutes)
 
 // Default Route
 app.get("/", (req, res) => {

@@ -24,7 +24,7 @@ router.post("/register", authMiddleware, async (req, res) => {
     const newEmployee = new Employee({
       name,
       email,
-      password: hashedPassword, // Save the hashed password
+      password: hashedPassword, 
       position,
       userId,
     });

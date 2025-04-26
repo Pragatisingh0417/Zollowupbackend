@@ -1,7 +1,7 @@
 const express = require("express");
 const { getAllBookings } = require("../controllers/bookingController");
-const authMiddleware = require("../middleware/authMiddleware"); // Import middleware
-const Booking = require("../models/Booking"); // Import the Booking model
+const authMiddleware = require("../middleware/authMiddleware"); 
+const Booking = require("../models/Booking"); 
 
 const router = express.Router();
 
