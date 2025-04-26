@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const Employee = require("../models/Employee");
 const bcrypt = require("bcryptjs");
-const authMiddleware = require("../middleware/authMiddleware"); // ✅ Import middleware
+const authMiddleware = require("../middleware/authMiddleware"); 
 const router = express.Router();
 
 // Debug log to confirm route is loaded
@@ -83,7 +83,6 @@ router.get(
   }
 );
 
-// ✅ NEW: GET /api/auth/me — return current authenticated user
 // ✅ GET /api/auth/me — return current authenticated user
 router.get("/me", authMiddleware, async (req, res) => {
   try {

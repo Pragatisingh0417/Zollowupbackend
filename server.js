@@ -1,11 +1,11 @@
 require("dotenv").config();
-const connectDB = require("./config/db"); // DB connection
+const connectDB = require("./config/db"); 
 const app = require("./app");
 
 // Function to start the server
 const startServer = async () => {
   try {
-    await connectDB(); // Connect to MongoDB
+    await connectDB(); 
     const PORT = process.env.PORT || 5000;
 
     app.listen(PORT, () => {
@@ -13,9 +13,8 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error("❌ Error starting server:", error.message);
-    process.exit(1); // Exit on failure
+    process.exit(1); 
   }
 };
 
-// Start the server
 startServer();
