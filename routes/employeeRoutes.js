@@ -1,14 +1,13 @@
 const express = require("express");
-const bcrypt = require("bcryptjs"); // Import bcryptjs
+// const bcrypt = require("bcryptjs"); 
 const Employee = require("../models/Employee");
 const authMiddleware = require("../middleware/authMiddleware"); // Protect routes
 const router = express.Router();
 
-// 🟢 CREATE - Register a new employee
-router.post("/register", authMiddleware, async (req, res) => {
+// 🟢 CREATE - Register a new employee (removed authMiddleware)
+router.post("/register", async (req, res) => {
   try {
     const { name, email, password, position } = req.body;
-    const userId = req.employee.userId; // Extracted from JWT
 
     // Check if email already exists
     const existingEmployee = await Employee.findOne({ email });
@@ -17,16 +16,18 @@ router.post("/register", authMiddleware, async (req, res) => {
     }
 
     // Hash the password before saving
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // const salt = await bcrypt.genSalt(10);
+    // const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create new employee with userId association
     const newEmployee = new Employee({
       name,
       email,
-      password: hashedPassword, 
+      password,
+      // password: hashedPassword, 
       position,
       userId,
+
     });
 
     await newEmployee.save();
@@ -37,10 +38,11 @@ router.post("/register", authMiddleware, async (req, res) => {
   }
 });
 
+
 // 🔵 READ - Get all employees for a specific user
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const employees = await Employee.find({ userId: req.employee.userId }); // Only fetch user's employees
+    const employees = await Employee.find({ userId: req.employee.userId });
     res.json(employees);
   } catch (error) {
     res.status(500).json({ message: "Error fetching employees", error });
