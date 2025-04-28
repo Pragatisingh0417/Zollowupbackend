@@ -56,8 +56,8 @@ router.post("/login", async (req, res) => {
     res.json({
       token,
       employee: {
-        id: employee._id,         // MongoDB's automatically generated ObjectId
-        userId: employee.userId,   // The custom userId from your schema
+        id: employee._id,         
+        userId: employee.userId,  
         name: employee.name,
         email: employee.email,
         position: employee.position,
