@@ -2,8 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const Employee = require("../models/Employee");
-const bcrypt = require("bcryptjs");
-const authMiddleware = require("../middleware/authMiddleware"); 
+const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // Debug log to confirm route is loaded
@@ -23,10 +22,8 @@ router.post("/register", async (req, res) => {
     let employee = await Employee.findOne({ email });
     if (employee) return res.status(400).json({ msg: "Employee already exists" });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    employee = new Employee({ name, email, password: hashedPassword, position, userId });
+    // Save the plain text password (without hashing)
+    employee = new Employee({ name, email, password, position, userId });
     await employee.save();
 
     res.status(201).json({ msg: "Employee registered successfully!" });
@@ -41,20 +38,26 @@ router.post("/login", async (req, res) => {
   console.log("📌 Login endpoint hit!");
 
   const { email, password } = req.body;
+  console.log("🛠️ Received email and password:", email, password);  // Debug log
 
   try {
     const employee = await Employee.findOne({ email });
+    console.log("👀 Found employee:", employee); // Debug log
+
     if (!employee) return res.status(401).json({ msg: "Invalid credentials" });
 
-    const isMatch = await bcrypt.compare(password, employee.password);
-    if (!isMatch) return res.status(401).json({ msg: "Invalid credentials" });
+    // Directly compare the plaintext password (no bcrypt needed)
+    if (password !== employee.password) {
+      return res.status(401).json({ msg: "Invalid credentials" });
+    }
 
     const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     res.json({
       token,
       employee: {
-        id: employee._id,
+        id: employee._id,         // MongoDB's automatically generated ObjectId
+        userId: employee.userId,   // The custom userId from your schema
         name: employee.name,
         email: employee.email,
         position: employee.position,
@@ -99,7 +102,5 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
- 
 
 module.exports = router;
