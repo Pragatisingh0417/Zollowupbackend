@@ -5,21 +5,20 @@ const session = require("express-session");
 const cors = require("cors");
 const { handleContactForm } = require('./controllers/contactController');
 
-
 dotenv.config();
 
 const app = express();
 
 // ✅ CORS Middleware
-app.use(cors({ origin: "http://localhost:3000", 
-  credentials: true
- }));
+app.use(cors({ 
+  origin: "http://localhost:3000", 
+  credentials: true 
+}));
 
 // Middleware
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.post('/contact', handleContactForm); // Ensure this matches the frontend fetch request
-
 
 // ✅ Session and Passport Setup
 app.use(
@@ -27,14 +26,14 @@ app.use(
     secret: process.env.SESSION_SECRET || "supersecretkey",
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }, // Set to `true` if using HTTPS
+    cookie: { secure: process.env.NODE_ENV === 'production' } // Condition for a  production
   })
 );
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport Strategy Configuration (ensure you have passport/googleStrategy.js set up)
+// Passport Strategy Configuration for googleStrategy setup
 require("./config/passport");
 
 // Routes
@@ -44,7 +43,8 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const locationRoutes = require("./routes/locationRoutes");
-const contactRoutes  = require("./routes/contactRoutes")
+const contactRoutes = require("./routes/contactRoutes");
+const maidRoutes = require('./routes/maidRoutes');
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -52,7 +52,8 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/location", locationRoutes);
-app.use("api/contact", contactRoutes)
+app.use("/api/contact", contactRoutes);  
+app.use("/api/maids", maidRoutes); 
 
 // Default Route
 app.get("/", (req, res) => {
