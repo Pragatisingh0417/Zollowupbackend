@@ -56,8 +56,8 @@ router.post("/login", async (req, res) => {
     res.json({
       token,
       employee: {
-        id: employee._id,         
-        userId: employee.userId,  
+        id: employee._id,
+        userId: employee.userId,
         name: employee.name,
         email: employee.email,
         position: employee.position,
@@ -72,12 +72,15 @@ router.post("/login", async (req, res) => {
 // 📌 GOOGLE AUTH ROUTES
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
+router.get("/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }), // In case of failure, redirect to home page
   async (req, res) => {
     try {
+      // Create a JWT token for the authenticated user
       const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+      // Redirect to your frontend dashboard with the token in the query params
+      // You can replace localhost:3000/dashboard with your frontend URL
       res.redirect(`http://localhost:3000/dashboard?token=${token}`);
     } catch (error) {
       console.error("❌ Google login error:", error);
@@ -85,6 +88,7 @@ router.get(
     }
   }
 );
+
 
 // ✅ GET /api/auth/me — return current authenticated user
 router.get("/me", authMiddleware, async (req, res) => {

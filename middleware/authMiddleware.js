@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const authMiddleware = (req, res, next) => {
   if (process.env.TEST_MODE === "true") {
     console.log("🟢 TEST MODE ENABLED: Skipping authentication.");
-    return next();
+    return next(); // Skip authentication in test mode
   }
 
   const authHeader = req.header("Authorization");
@@ -16,9 +16,12 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // 👈 Use 'user' instead of 'employee'
-    next();
+    req.user = decoded; // Store decoded user info in req.user
+    next(); // Continue to the next middleware or route handler
   } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired. Please log in again." });
+    }
     return res.status(401).json({ message: "Invalid token." });
   }
 };
