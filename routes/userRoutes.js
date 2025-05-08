@@ -8,7 +8,6 @@ const router = express.Router();
 // ✅ Route to register a new user (Signup)
 router.post("/register", createUser);
 
-// router.post("/login", loginUser); // You may need a `loginUser` function
 
 // ✅ Route to get all users (Protected)
 router.get("/", authMiddleware, getAllUsers);
