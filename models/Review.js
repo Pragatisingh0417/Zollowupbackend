@@ -6,7 +6,7 @@ const reviewSchema = new mongoose.Schema(
   {
     bookingId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking", // Assuming you have a Booking model
+      ref: "Booking", 
       required: true,
     },
     rating: {
