@@ -5,7 +5,6 @@ const Employee = require("../models/Employee");
 const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
 
-// Debug log to confirm route is loaded
 console.log("✅ authRoutes.js loaded");
 
 // 📌 REGISTER - POST /api/auth/register
@@ -22,7 +21,6 @@ router.post("/register", async (req, res) => {
     let employee = await Employee.findOne({ email });
     if (employee) return res.status(400).json({ msg: "Employee already exists" });
 
-    // Save the plain text password (without hashing)
     employee = new Employee({ name, email, password, position, userId });
     await employee.save();
 
@@ -38,20 +36,19 @@ router.post("/login", async (req, res) => {
   console.log("📌 Login endpoint hit!");
 
   const { email, password } = req.body;
-  console.log("🛠️ Received email and password:", email, password);  // Debug log
 
   try {
     const employee = await Employee.findOne({ email });
-    console.log("👀 Found employee:", employee); // Debug log
 
-    if (!employee) return res.status(401).json({ msg: "Invalid credentials" });
-
-    // Directly compare the plaintext password (no bcrypt needed)
-    if (password !== employee.password) {
+    if (!employee || password !== employee.password) {
       return res.status(401).json({ msg: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(
+      { userId: employee._id, userType: "employee" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({
       token,
@@ -69,18 +66,19 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// 📌 GOOGLE AUTH ROUTES
+// 📌 GOOGLE AUTH (keep only if you use it)
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
 router.get("/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }), // In case of failure, redirect to home page
+  passport.authenticate("google", { failureRedirect: "/" }),
   async (req, res) => {
     try {
-      // Create a JWT token for the authenticated user
-      const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+      const token = jwt.sign(
+        { userId: req.user._id, userType: "employee" },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
 
-      // Redirect to your frontend dashboard with the token in the query params
-      // You can replace localhost:3000/dashboard with your frontend URL
       res.redirect(`http://localhost:3000/dashboard?token=${token}`);
     } catch (error) {
       console.error("❌ Google login error:", error);
@@ -89,22 +87,21 @@ router.get("/google/callback",
   }
 );
 
-
-  // ✅ GET /api/auth/me — return current authenticated user
-  router.get("/me", authMiddleware, async (req, res) => {
-    try {
-      if (!req.user || !req.user.Id) {
-        return res.status(400).json({ message: "Authentication info missing" });
-      }
-
-      const employee = await Employee.findById(req.user.userId).select("-password");
-      if (!employee) return res.status(404).json({ message: "User not found" });
-
-      res.json(employee);
-    } catch (err) {
-      console.error("❌ Error fetching user:", err);
-      res.status(500).json({ message: "Server error" });
+// ✅ GET /api/auth/me — return current authenticated user
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || !req.user.userId) {
+      return res.status(400).json({ message: "Authentication info missing" });
     }
-  });
+
+    const employee = await Employee.findById(req.user.userId).select("-password");
+    if (!employee) return res.status(404).json({ message: "User not found" });
+
+    res.json(employee);
+  } catch (err) {
+    console.error("❌ Error fetching user:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;
