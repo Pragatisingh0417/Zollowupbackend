@@ -90,21 +90,21 @@ router.get("/google/callback",
 );
 
 
-// ✅ GET /api/auth/me — return current authenticated user
-router.get("/me", authMiddleware, async (req, res) => {
-  try {
-    if (!req.user || !req.user.userId) {
-      return res.status(400).json({ message: "Authentication info missing" });
+  // ✅ GET /api/auth/me — return current authenticated user
+  router.get("/me", authMiddleware, async (req, res) => {
+    try {
+      if (!req.user || !req.user.Id) {
+        return res.status(400).json({ message: "Authentication info missing" });
+      }
+
+      const employee = await Employee.findById(req.user.userId).select("-password");
+      if (!employee) return res.status(404).json({ message: "User not found" });
+
+      res.json(employee);
+    } catch (err) {
+      console.error("❌ Error fetching user:", err);
+      res.status(500).json({ message: "Server error" });
     }
-
-    const employee = await Employee.findById(req.user.userId).select("-password");
-    if (!employee) return res.status(404).json({ message: "User not found" });
-
-    res.json(employee);
-  } catch (err) {
-    console.error("❌ Error fetching user:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+  });
 
 module.exports = router;
