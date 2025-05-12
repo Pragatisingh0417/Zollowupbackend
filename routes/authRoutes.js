@@ -7,65 +7,6 @@ const router = express.Router();
 
 console.log("✅ authRoutes.js loaded");
 
-// 📌 REGISTER - POST /api/auth/register
-router.post("/register", async (req, res) => {
-  console.log("📌 Register endpoint hit!");
-
-  const { name, email, password, position, userId } = req.body;
-
-  if (!name || !email || !password || !position || !userId) {
-    return res.status(400).json({ msg: "All fields are required" });
-  }
-
-  try {
-    let employee = await Employee.findOne({ email });
-    if (employee) return res.status(400).json({ msg: "Employee already exists" });
-
-    employee = new Employee({ name, email, password, position, userId });
-    await employee.save();
-
-    res.status(201).json({ msg: "Employee registered successfully!" });
-  } catch (error) {
-    console.error("❌ Registration error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 📌 LOGIN - POST /api/auth/login
-router.post("/login", async (req, res) => {
-  console.log("📌 Login endpoint hit!");
-
-  const { email, password } = req.body;
-
-  try {
-    const employee = await Employee.findOne({ email });
-
-    if (!employee || password !== employee.password) {
-      return res.status(401).json({ msg: "Invalid credentials" });
-    }
-
-    const token = jwt.sign(
-      { userId: employee._id, userType: "employee" },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.json({
-      token,
-      employee: {
-        id: employee._id,
-        userId: employee.userId,
-        name: employee.name,
-        email: employee.email,
-        position: employee.position,
-      },
-    });
-  } catch (error) {
-    console.error("❌ Login error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // 📌 GOOGLE AUTH (keep only if you use it)
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
@@ -73,12 +14,14 @@ router.get("/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   async (req, res) => {
     try {
+      // Ensure the user exists in your database after google authentication.
       const token = jwt.sign(
         { userId: req.user._id, userType: "employee" },
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
 
+      // Redirect with token as a query parameter to the frontend.
       res.redirect(`http://localhost:3000/dashboard?token=${token}`);
     } catch (error) {
       console.error("❌ Google login error:", error);
@@ -87,7 +30,33 @@ router.get("/google/callback",
   }
 );
 
-// ✅ GET /api/auth/me — return current authenticated user
+// ✅ POST /api/auth/login — handle normal login (email + password)
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  
+  try {
+    const employee = await Employee.findOne({ email });
+    if (!employee) return res.status(400).json({ msg: "Invalid credentials" });
+
+    // Check password (Assuming hashed password in DB)
+    const isMatch = await bcrypt.compare(password, employee.password);
+    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: employee._id, userType: "employee" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({ token, employee: { id: employee._id, name: employee.name, email: employee.email } });
+  } catch (error) {
+    console.error("❌ Error during login:", error);
+    res.status(500).json({ message: "Error occurred during login", error });
+  }
+});
+
+// ✅ GET /api/auth/me — return current authenticated user (Protected)
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     if (!req.user || !req.user.userId) {
@@ -102,6 +71,11 @@ router.get("/me", authMiddleware, async (req, res) => {
     console.error("❌ Error fetching user:", err);
     res.status(500).json({ message: "Server error" });
   }
+});
+
+// ✅ Protect other routes with JWT (Example)
+router.get("/protected", authMiddleware, (req, res) => {
+  res.json({ message: "You have access to this route!" });
 });
 
 module.exports = router;

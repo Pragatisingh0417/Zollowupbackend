@@ -1,41 +1,58 @@
 const Employee = require("../models/Employee");
+const bcrypt = require("bcryptjs"); // For password comparison if required
+const jwt = require("jsonwebtoken");
 
-// @desc    Register a new employee
-// @route   POST /api/employees/register
-const registerEmployee = async (req, res) => {
+// @desc    Employee login
+// @route   POST /api/employees/login
+const loginEmployee = async (req, res) => {
   try {
-    const { name, email, password, position } = req.body;
+    const { email, password } = req.body;
 
-    // Check if employee already exists
-    const existingEmployee = await Employee.findOne({ email });
-    if (existingEmployee) {
-      return res.status(400).json({ message: "Employee already exists" });
+    // Check if employee exists
+    const employee = await Employee.findOne({ email });
+    if (!employee) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Create new employee
-    const employee = await Employee.create({ name, email, password, position });
+    // Compare password (hashed if using bcrypt)
+    const isMatch = await bcrypt.compare(password, employee.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    res.status(201).json({
-      message: "Employee registered successfully",
-      employee,
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: employee._id, userType: "employee" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    // Send response with token and employee data
+    res.json({
+      token,
+      employee: {
+        id: employee._id,
+        email: employee.email,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("❌ Login error:", error);
+    res.status(500).json({ message: "Server error during login" });
   }
 };
 
-// @desc    Get all employees
+// @desc    Get all employees (only if needed, adjust based on your use case)
 // @route   GET /api/employees
 const getAllEmployees = async (req, res) => {
   try {
-    const employees = await Employee.find();
+    const employees = await Employee.find(); // No need to filter by userId unless it's required for access control
     res.status(200).json(employees);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
 };
 
-// @desc    Update employee
+// @desc    Update employee details
 // @route   PUT /api/employees/:id
 const updateEmployee = async (req, res) => {
   try {
@@ -57,5 +74,5 @@ const deleteEmployee = async (req, res) => {
   }
 };
 
-// Export all functions
-module.exports = { registerEmployee, getAllEmployees, updateEmployee, deleteEmployee };
+// Export only the necessary functions
+module.exports = { loginEmployee, getAllEmployees, updateEmployee, deleteEmployee };

@@ -26,7 +26,7 @@ app.use(
     secret: process.env.SESSION_SECRET || "supersecretkey",
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' } // Condition for a  production
+    cookie: { secure: process.env.NODE_ENV === 'production' } // Condition for production
   })
 );
 
@@ -47,9 +47,8 @@ const contactRoutes = require("./routes/contactRoutes");
 const maidRoutes = require('./routes/maidRoutes');
 const reviewRoutes = require("./routes/reviewRoutes");
 
-
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/auth/user", userRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/employees", employeeRoutes);
@@ -58,9 +57,16 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/maids", maidRoutes); 
 app.use("/api/reviews", reviewRoutes);
 
+
 // Default Route
 app.get("/", (req, res) => {
   res.send("🚀 API is running...");
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something went wrong!');
 });
 
 module.exports = app;

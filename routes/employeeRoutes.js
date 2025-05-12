@@ -1,65 +1,71 @@
 const express = require("express");
-// const bcrypt = require("bcryptjs"); 
+const bcrypt = require("bcryptjs"); // Required for password hashing during login
+const jwt = require("jsonwebtoken"); // Required for creating JWT tokens
 const Employee = require("../models/Employee");
 const authMiddleware = require("../middleware/authMiddleware"); // Protect routes
 const router = express.Router();
 
-// 🟢 CREATE - Register a new employee (removed authMiddleware)
-router.post("/register", async (req, res) => {
+// 🟢 LOGIN - Employee login (Only email and password required)
+// This is under the /api/employees/login route now
+router.post("/login", async (req, res) => {
   try {
-    const { name, email, password, position } = req.body;
+    const { email, password } = req.body;
 
-    // Check if email already exists
-    const existingEmployee = await Employee.findOne({ email });
-    if (existingEmployee) {
-      return res.status(400).json({ message: "Email already exists" });
+    // Check if email exists
+    const employee = await Employee.findOne({ email });
+    if (!employee) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Hash the password before saving
-    // const salt = await bcrypt.genSalt(10);
-    // const hashedPassword = await bcrypt.hash(password, salt);
+    // Compare password (if hashed, use bcrypt to compare)
+    const isMatch = await bcrypt.compare(password, employee.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    // Create new employee with userId association
-    const newEmployee = new Employee({
-      name,
-      email,
-      password,
-      // password: hashedPassword, 
-      position,
-      userId,
+    // Generate JWT token on successful login
+    const token = jwt.sign(
+      { userId: employee._id, userType: "employee" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
+    res.json({
+      token,
+      employee: {
+        id: employee._id,
+        email: employee.email,
+      },
     });
-
-    await newEmployee.save();
-
-    res.status(201).json({ message: "Employee registered successfully", employee: newEmployee });
   } catch (error) {
-    res.status(500).json({ message: "Error registering employee", error });
+    console.error("❌ Login error:", error);
+    res.status(500).json({ message: "Server error during login" });
   }
 });
 
-
-// 🔵 READ - Get all employees for a specific user
+// 🔵 READ - Get all employees (if needed)
+// This is under the /api/employees route now
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const employees = await Employee.find({ userId: req.employee.userId });
+    const employees = await Employee.find({}); // Removed userId association since it might not be needed
     res.json(employees);
   } catch (error) {
     res.status(500).json({ message: "Error fetching employees", error });
   }
 });
 
-// 🟡 UPDATE - Update employee details
+// 🟡 UPDATE - Update employee details (If needed)
+// This is under the /api/employees/:id route now
 router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const updatedEmployee = await Employee.findOneAndUpdate(
-      { _id: req.params.id, userId: req.employee.userId }, // Ensure only the owner can update
+      { _id: req.params.id }, // Removed userId restriction for now (assuming admin role or similar is responsible for updates)
       req.body,
       { new: true }
     );
 
     if (!updatedEmployee) {
-      return res.status(404).json({ message: "Employee not found or unauthorized" });
+      return res.status(404).json({ message: "Employee not found" });
     }
 
     res.json(updatedEmployee);
@@ -68,16 +74,16 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// 🔴 DELETE - Remove an employee
+// 🔴 DELETE - Remove an employee (if needed)
+// This is under the /api/employees/:id route now
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const deletedEmployee = await Employee.findOneAndDelete({
       _id: req.params.id,
-      userId: req.employee.userId, // Ensure only the owner can delete
     });
 
     if (!deletedEmployee) {
-      return res.status(404).json({ message: "Employee not found or unauthorized" });
+      return res.status(404).json({ message: "Employee not found" });
     }
 
     res.json({ message: "Employee deleted successfully" });
@@ -86,4 +92,5 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   }
 });
 
+// Exporting the routes with /api/employees prefix
 module.exports = router;
