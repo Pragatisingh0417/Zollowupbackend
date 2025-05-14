@@ -1,40 +1,57 @@
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const User = require("../models/User");
+const sendEmail = require("../utils/sendEmail");
 
-// ✅ Create & Save a New User (with password hashing)
+
 exports.createUser = async (req, res) => {
+  console.log("📨 Received signup request:", req.body);
+
   try {
-    const { name, email, password } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const verificationToken = crypto.randomBytes(32).toString("hex");
 
-    // Validate the incoming data
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields (name, email, password) are required" });
-    }
+  const newUser = new User({
+    name,
+    email,
+    password: hashedPassword,
+    verificationToken,
+    verified: false,
+  });
 
-    // Check if the user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create the user with the hashed password
-    const newUser = new User({ name, email, password: hashedPassword });
-
-    // Save the new user to the database
+  try {
     await newUser.save();
-
-    // Respond with a success message
-    res.status(201).json({ message: "User registered successfully", user: newUser });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.log("✅ User saved to DB:", newUser.email);
+  } catch (err) {
+    console.error("❌ Error saving user to DB:", err.message);
+    return res.status(500).json({ message: "Failed to save user to database" });
   }
+
+  const verificationUrl = `http://localhost:3000/verify-email/${verificationToken}`;
+  const html = `
+    <h2>Verify your ZollowUp account</h2>
+    <p>Click the link below to verify your email:</p>
+    <a href="${verificationUrl}">${verificationUrl}</a>
+  `;
+
+  try {
+    await sendEmail(email, "Verify your email", html);
+    console.log("📧 Verification email sent to:", email);
+  } catch (err) {
+    console.error("❌ Error sending email:", err.message);
+    return res.status(500).json({ message: "Failed to send verification email" });
+  }
+
+  res.status(201).json({
+    message: "Signup successful! Please check your email to verify your account.",
+  });
+} catch (error) {
+  console.error("❌ Server error:", error.message);
+  res.status(500).json({ message: "Server error", error: error.message });
+}
+
 };
 
-// ✅ Get All Users
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
@@ -42,29 +59,5 @@ exports.getAllUsers = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
-  }
-};
-
-// ✅ Test Route to Check API & DB Connection
-exports.testAPI = (req, res) => {
-  res.status(200).json({ message: "API is working fine!" });
-};
-
-// ✅ Test Route to Check MongoDB Connection
-exports.checkUsers = async (req, res) => {
-  try {
-    const users = await User.find();
-    res.status(200).json({
-      success: true,
-      count: users.length,
-      data: users,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Database connection error",
-      error: error.message,
-    });
   }
 };
