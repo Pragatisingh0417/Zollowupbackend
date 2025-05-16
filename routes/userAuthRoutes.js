@@ -52,14 +52,17 @@ router.post("/register", async (req, res) => {
 
 // GET /api/users/verify-email/:token
 router.get("/verify-email/:token", async (req, res) => {
-const user = await User.findOne({ verificationToken: req.params.token });
-if (!user) return res.status(400).json({ msg: "Invalid or expired token." });
+  const user = await User.findOne({ verificationToken: req.params.token });
+  if (!user) return res.status(400).json({ msg: "Invalid or expired token." });
 
-user.isVerified = true;
-user.verificationToken = undefined;
-await user.save();
-res.status(200).json({ msg: "Email verified. You can now log in." });
+  user.emailVerified = true;
+  user.verificationToken = undefined;
+  await user.save();
+
+  // Redirect or show success
+return res.redirect("http://localhost:3000/user/login?verified=true");
 });
+
 
 // POST /api/users/login
 router.post("/login", async (req, res) => {
@@ -69,7 +72,7 @@ router.post("/login", async (req, res) => {
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) return res.status(401).json({ message: "Invalid password" });
-  if (!user.isVerified) return res.status(403).json({ message: "    Please verify your email first." });
+  if (!user.emailVerified) return res.status(403).json({ message: "    Please verify your email first." });
 
   const token = jwt.sign(
     { userId: user._id, userType: "user" },
